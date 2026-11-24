@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<!-- Gemaakt door Bartosz uit 4k2 -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="author" content="Bartosz">
+<title>François Vatel · School Clock</title>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0a0a0a; --fg:#ffffff; --ac:#ffd400; --mu:#a8a8a8; --on:#0a0a0a;
+  --ui:'Space Grotesk',system-ui,Arial,sans-serif;
+  --disp:'Anton',Impact,'Arial Narrow',sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{background:var(--bg);color:var(--fg);font-family:var(--ui);display:flex;flex-direction:column;min-height:100vh;transition:background .4s,color .4s}
+button{font-family:var(--ui);cursor:pointer}
+button:focus-visible{outline:2px solid var(--ac);outline-offset:3px}
+
+/* ---------- Controls bar ---------- */
+.bar{display:flex;flex-wrap:wrap;gap:12px 20px;align-items:center;justify-content:space-between;padding:16px clamp(16px,4vw,44px)}
+.group{display:flex;flex-wrap:wrap;gap:6px}
+.group button,#fs{font-size:14px;font-weight:500;color:var(--fg);background:transparent;border:1px solid var(--mu);padding:9px 18px;border-radius:999px}
+.group button:hover,#fs:hover{border-color:var(--ac)}
+.group button[aria-pressed="true"]{background:var(--ac);color:var(--on);border-color:var(--ac)}
+#modes button{padding:9px 22px;font-size:15px}
+#lang button{padding:9px 13px}
+.right{display:flex;flex-wrap:wrap;gap:14px;align-items:center}
+.cws{display:flex;gap:10px}
+.cws button{width:30px;height:30px;border-radius:50%;border:2px solid var(--mu);padding:0}
+.cws button[aria-pressed="true"]{border-color:var(--fg);box-shadow:0 0 0 3px var(--bg),0 0 0 5px var(--fg)}
+
+/* ---------- Main ---------- */
+main{flex:1;display:flex;flex-direction:column;justify-content:center;max-width:1100px;width:100%;margin:0 auto;padding:10px clamp(16px,4vw,44px) 20px}
+.top{display:flex;align-items:center;gap:18px;margin-bottom:clamp(8px,2vh,22px)}
+.logo,.logo-fb{width:clamp(56px,9vw,96px);height:clamp(56px,9vw,96px);border-radius:12px}
+.logo{object-fit:contain}
+.logo-fb{background:var(--ac);color:var(--on);display:flex;align-items:center;justify-content:center;font:400 46px var(--disp)}
+.nm{font:400 clamp(22px,4vw,40px)/1 var(--disp);letter-spacing:.04em;text-transform:uppercase}
+.nm small{display:block;font:500 clamp(12px,1.6vw,16px) var(--ui);letter-spacing:.06em;color:var(--mu);margin-top:6px;text-transform:none}
+
+.view{display:none}
+.view.on{display:block}
+
+/* Clock mode */
+.big{font:400 min(28vw,46vh,360px)/.95 var(--disp);letter-spacing:.01em}
+.big small{font-size:.38em;color:var(--ac);margin-left:.12em}
+
+/* Words mode (Dutch time in words) */
+.wd{font:400 clamp(38px,8.4vw,118px)/1.08 var(--disp);text-transform:uppercase;letter-spacing:.02em;min-height:2.2em}
+.wd .c{color:var(--ac)}
+.wd-dig{font:500 clamp(18px,3vw,30px) var(--ui);color:var(--mu);margin-top:6px;font-variant-numeric:tabular-nums}
+.qbar{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:clamp(14px,3vh,28px)}
+.q{border:1px solid var(--mu);border-radius:10px;padding:10px 6px;text-align:center;font:500 clamp(12px,1.6vw,16px) var(--ui);color:var(--mu)}
+.q b{display:block;font:400 clamp(15px,2.4vw,26px) var(--disp);text-transform:uppercase;letter-spacing:.03em;color:var(--fg);margin-bottom:2px}
+.q.on{background:var(--ac);border-color:var(--ac);color:var(--on)}
+.q.on b{color:var(--on)}
+.qprog{height:4px;background:rgba(128,128,128,.35);border-radius:4px;margin-top:8px;overflow:hidden}
+.qprog span{display:block;height:100%;width:0;background:var(--ac)}
+.wd-hint{font:500 clamp(14px,1.9vw,19px) var(--ui);color:var(--mu);margin-top:14px;min-height:1.4em}
+
+/* Countdown mode */
+.cd-label{font:500 clamp(16px,2.4vw,26px) var(--ui);color:var(--mu)}
+.cd-event{font:400 clamp(34px,7vw,84px)/1.05 var(--disp);text-transform:uppercase;letter-spacing:.03em;margin:6px 0 2px}
+.cd-at{font:500 clamp(16px,2.4vw,26px) var(--ui);color:var(--ac)}
+.cd-time{font:400 min(24vw,42vh,320px)/1 var(--disp);letter-spacing:.02em;font-variant-numeric:tabular-nums;color:var(--ac);margin-top:clamp(6px,2vh,20px)}
+.cd-now{font:500 clamp(14px,2vw,20px) var(--ui);color:var(--mu);margin-top:8px}
+
+/* Timer mode */
+.tm-time{font:400 min(26vw,44vh,340px)/1 var(--disp);letter-spacing:.02em;font-variant-numeric:tabular-nums;color:var(--ac)}
+.tm-time.done{animation:flash 1s steps(2,end) infinite}
+@keyframes flash{50%{opacity:.15}}
+.tm-msg{font:400 clamp(24px,5vw,56px)/1.2 var(--disp);text-transform:uppercase;letter-spacing:.04em;min-height:1.2em}
+.tm-set{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:center;margin-top:14px}
+.tm-set label{display:flex;align-items:center;gap:8px;color:var(--mu);font-size:15px}
+.tm-set input{width:90px;font:500 22px var(--ui);padding:8px 10px;border-radius:10px;border:1px solid var(--mu);background:transparent;color:var(--fg)}
+.tm-set button{font-size:16px;font-weight:500;color:var(--fg);background:transparent;border:1px solid var(--mu);padding:11px 22px;border-radius:999px}
+.tm-set button:hover{border-color:var(--ac)}
+.tm-set button.go{background:var(--ac);color:var(--on);border-color:var(--ac)}
+
+/* Credit: always visible, even when options are hidden */
+.credit{position:fixed;left:16px;bottom:16px;z-index:5;font:500 13px var(--ui);letter-spacing:.04em;color:var(--mu);padding:7px 12px;border-radius:999px;border:1px solid transparent;user-select:none}
+.credit b{color:var(--ac);font-weight:700;letter-spacing:.08em}
+body.clean .credit{opacity:.55}
+
+/* Hide button: press the H button or the H key to hide / show all options */
+.hbtn{position:fixed;right:16px;bottom:16px;width:42px;height:42px;border-radius:50%;border:1px solid var(--mu);background:var(--bg);color:var(--fg);font:700 16px var(--ui);display:flex;align-items:center;justify-content:center;z-index:5;transition:opacity .3s}
+.hbtn:hover{border-color:var(--ac)}
+body.clean .bar,body.clean footer,body.clean .tm-set{display:none}
+body.clean .hbtn{opacity:.18}
+body.clean .hbtn:hover,body.clean .hbtn:focus-visible{opacity:1}
+
+footer{padding:12px 20px 20px;text-align:center;color:var(--mu);font-size:14px}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+
+<header class="bar">
+  <div class="group" id="modes" role="group" aria-label="View"></div>
+  <div class="right">
+    <div class="group" id="lang" role="group" aria-label="Language">
+      <button type="button" data-l="en">EN</button>
+      <button type="button" data-l="nl">NL</button>
+    </div>
+    <div class="cws" id="cws"></div>
+    <button id="fs" type="button">Fullscreen</button>
+  </div>
+</header>
+
+<main>
+  <div class="top">
+
+    <!-- ==================================================== -->
+    <!--  PUT YOUR LOGO HERE                                  -->
+    <!--  1. Save your logo in the SAME folder as this file   -->
+    <!--  2. Name it  logo.png   (or change the name below)   -->
+    <!-- ==================================================== -->
+    <img class="logo" id="logo" src="logo.png" alt="François Vatel logo">
+
+    <!-- Shown automatically only if logo.png is missing -->
+    <div class="logo-fb" id="logoFb" style="display:none">V</div>
+
+    <div class="nm">François Vatel<small id="date"></small></div>
+  </div>
+
+  <!-- VIEW 1: normal clock -->
+  <section class="view" id="v-clock">
+    <div class="big"><span id="cHM">--:--</span><small id="cS">--</small></div>
+  </section>
+
+  <!-- VIEW: the time in Dutch words, minute by minute -->
+  <section class="view" id="v-words">
+    <div class="wd" id="wWords">&nbsp;</div>
+    <div class="wd-dig" id="wDig"></div>
+    <div class="qbar" id="qbar">
+      <div class="q"><b>over</b>0 – 15</div>
+      <div class="q"><b>voor half</b>15 – 30</div>
+      <div class="q"><b>over half</b>30 – 45</div>
+      <div class="q"><b>voor</b>45 – 60</div>
+    </div>
+    <div class="qprog"><span id="qProg"></span></div>
+    <div class="wd-hint" id="wHint"></div>
+  </section>
+
+  <!-- VIEW 2: countdown to next bell -->
+  <section class="view" id="v-count">
+    <div class="cd-label" id="dNext"></div>
+    <div class="cd-event" id="dEv"></div>
+    <div class="cd-at" id="dAt"></div>
+    <div class="cd-time" id="dCd">--:--</div>
+    <div class="cd-now" id="dNow"></div>
+  </section>
+
+  <!-- VIEW 3: custom timer (you choose the time) -->
+  <section class="view" id="v-timer">
+    <div class="tm-time" id="tTime">05:00</div>
+    <div class="tm-msg" id="tMsg"></div>
+    <div class="tm-set">
+      <label><span id="tLblMin"></span><input type="number" id="tMin" min="0" max="999" value="5"></label>
+      <label><span id="tLblSec"></span><input type="number" id="tSec" min="0" max="59" value="0"></label>
+      <button type="button" class="go" id="tGo"></button>
+      <button type="button" id="tReset"></button>
+    </div>
+    <div class="tm-set" id="tPre"></div>
+  </section>
+</main>
+
+<!-- CREDIT: same text in English and Dutch. Edit the words here if you want to change it. -->
+<div class="credit" id="credit">Gemaakt door <b>Bartosz</b> uit 4k2</div>
+
+<button type="button" class="hbtn" id="hide" aria-label="Hide or show options">H</button>
+
+<footer id="zone"></footer>
+
+<script>
+(function () {
+  var ZONE = 'Europe/Paris'; // CET in winter, CEST in summer
+
+  // ======================================================
+  //  SCHOOL SCHEDULE (edit times here)  [hour, minute, label key]
+  //  The countdown runs to the next bell in this list.
+  //  At 15:50 it jumps straight to counting down to 00:00 (tomorrow).
+  // ======================================================
+  var SCHEDULE = [
+    [8, 20, 'start'],      // school starts
+    [9, 10, 'nextClass'],
+    [10, 0, 'brk'],        // break
+    [10, 15, 'nextBell'],
+    [10, 20, 'official'],  // class starts officially
+    [11, 10, 'nextClass'],
+    [12, 0, 'brk'],
+    [12, 25, 'nextBell'],
+    [12, 30, 'official'],
+    [13, 20, 'nextClass'],
+    [14, 10, 'nextClass'],
+    [15, 0, 'nextClass'],
+    [15, 50, 'nextClass'], // last bell: shows 'Next class', after it the countdown goes straight to tomorrow
+    [24, 0, 'tomorrow']    // midnight = next day
+  ];
+
+  // ======================================================
+  //  TEXT IN BOTH LANGUAGES
+  // ======================================================
+  var T = {
+    en: { loc: 'en-GB', fs: 'Fullscreen', hide: 'Hide / show options (H key)', next: 'Next', at: 'at', now: 'Now', summer: 'UTC+2 summer time', winter: 'UTC+1',
+      modes: { clock: 'Clock', words: 'Dutch words', count: 'Countdown', timer: 'Timer' },
+      hint: function (w, a) { return 'Dutch counts toward the next hour: \u201chalf ' + w + '\u201d = ' + a + ':30 (half an hour before ' + w + ').'; },
+      tm: { min: 'Minutes', sec: 'Seconds', start: 'Start', pause: 'Pause', resume: 'Resume', reset: 'Reset', done: 'Time\u2019s up!' },
+      ev: { start: 'School starts', nextClass: 'Next class', brk: 'Break', nextBell: 'Next bell',
+            official: 'Class starts officially', end: 'End of school', tomorrow: 'Tomorrow' } },
+    nl: { loc: 'nl-NL', fs: 'Volledig scherm', hide: 'Opties verbergen / tonen (H-toets)', next: 'Volgende', at: 'om', now: 'Nu', summer: 'UTC+2 zomertijd', winter: 'UTC+1',
+      modes: { clock: 'Klok', words: 'In woorden', count: 'Aftellen', timer: 'Timer' },
+      hint: function (w, a) { return 'In het Nederlands tel je naar het volgende uur: \u201chalf ' + w + '\u201d = ' + a + ':30 (een half uur voor ' + w + ').'; },
+      tm: { min: 'Minuten', sec: 'Seconden', start: 'Start', pause: 'Pauze', resume: 'Hervat', reset: 'Reset', done: 'Tijd is om!' },
+      ev: { start: 'School begint', nextClass: 'Volgende les', brk: 'Pauze', nextBell: 'Volgende bel',
+            official: 'Les begint officieel', end: 'Einde schooldag', tomorrow: 'Morgen' } }
+  };
+
+  // ======================================================
+  //  COLORWAYS (black, yellow, white) - edit colors here
+  // ======================================================
+  var COLORWAYS = [
+    { n: 'Black',  bg: '#0a0a0a', fg: '#ffffff', ac: '#ffd400', on: '#0a0a0a', mu: '#a8a8a8' },
+    { n: 'Yellow', bg: '#ffd400', fg: '#0a0a0a', ac: '#0a0a0a', on: '#ffd400', mu: '#4a4000' },
+    { n: 'White',  bg: '#ffffff', fg: '#0a0a0a', ac: '#e6b800', on: '#0a0a0a', mu: '#666666' }
+  ];
+  var MODES = ['clock', 'words', 'count', 'timer'];
+
+  function pad(n) { return String(n).padStart(2, '0'); }
+  function $(id) { return document.getElementById(id); }
+  function each(list, fn) { Array.prototype.slice.call(list).forEach(fn); }
+
+  var timeFmt = new Intl.DateTimeFormat('en-GB', {
+    timeZone: ZONE, hourCycle: 'h23', hour: '2-digit', minute: '2-digit', second: '2-digit', timeZoneName: 'short'
+  });
+  var dateFmts = {};
+  function dateText(lang) {
+    if (!dateFmts[lang]) dateFmts[lang] = new Intl.DateTimeFormat(T[lang].loc,
+      { timeZone: ZONE, weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+    var s = dateFmts[lang].format(new Date());
+    return s.charAt(0).toUpperCase() + s.slice(1);
+  }
+  function now() {
+    var p = {};
+    timeFmt.formatToParts(new Date()).forEach(function (x) { p[x.type] = x.value; });
+    return { h: +p.hour, m: +p.minute, s: +p.second, tz: p.timeZoneName };
+  }
+
+  // ----- Saved settings -----
+  var mode = 'clock', lang = 'en', cw = 0;
+  try {
+    var m = localStorage.getItem('vatel-mode'); if (MODES.indexOf(m) > -1) mode = m;
+    var l = localStorage.getItem('vatel-lang'); if (l === 'en' || l === 'nl') lang = l;
+    var c = parseInt(localStorage.getItem('vatel-cw'), 10); if (c >= 0 && c < COLORWAYS.length) cw = c;
+  } catch (e) {}
+  function save(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+
+  // ----- Logo fallback (shows a yellow V if logo.png is missing) -----
+  $('logo').addEventListener('error', function () {
+    this.style.display = 'none'; $('logoFb').style.display = 'flex';
+  });
+
+  // ----- Mode buttons (Clock / Countdown) -----
+  MODES.forEach(function (k) {
+    var b = document.createElement('button');
+    b.type = 'button'; b.setAttribute('data-m', k);
+    b.addEventListener('click', function () { setMode(k); });
+    $('modes').appendChild(b);
+  });
+  function setMode(k) {
+    mode = k; save('vatel-mode', k);
+    each($('modes').children, function (b) { b.setAttribute('aria-pressed', String(b.getAttribute('data-m') === k)); });
+    MODES.forEach(function (x) { $('v-' + x).classList.toggle('on', k === x); });
+  }
+
+  // ----- Language -----
+  var lastTz = null;
+  function setLang(l) {
+    lang = l; save('vatel-lang', l); lastTz = null; wKey = null;
+    document.documentElement.setAttribute('lang', l);
+    each($('lang').children, function (b) { b.setAttribute('aria-pressed', String(b.getAttribute('data-l') === l)); });
+    each($('modes').children, function (b) { b.textContent = T[l].modes[b.getAttribute('data-m')]; });
+    $('fs').textContent = T[l].fs;
+    $('hide').title = T[l].hide;
+    $('dNext').textContent = T[l].next;
+    timerText();
+  }
+  each($('lang').children, function (b) {
+    b.addEventListener('click', function () { setLang(b.getAttribute('data-l')); });
+  });
+
+  // ----- Colorway dots -----
+  function setCW(i) {
+    var w = COLORWAYS[i], r = document.documentElement.style;
+    ['bg', 'fg', 'ac', 'on', 'mu'].forEach(function (v) { r.setProperty('--' + v, w[v]); });
+    each($('cws').children, function (b, j) { b.setAttribute('aria-pressed', String(j === i)); });
+    save('vatel-cw', i);
+  }
+  COLORWAYS.forEach(function (w, i) {
+    var b = document.createElement('button');
+    b.type = 'button'; b.title = w.n; b.setAttribute('aria-label', w.n);
+    b.style.background = w.ac; b.style.borderColor = w.bg === '#ffffff' ? '#999999' : w.bg;
+    b.addEventListener('click', function () { setCW(i); });
+    $('cws').appendChild(b);
+  });
+
+  // ======================================================
+  //  DUTCH TIME IN WORDS (every minute)
+  //   0        drie uur
+  //   1-14     N over drie        15  kwart over drie
+  //   16-29    N voor half vier   30  half vier
+  //   31-44    N over half vier   45  kwart voor vier
+  //   46-59    N voor vier
+  //  From minute 16 on, Dutch counts toward the NEXT hour.
+  // ======================================================
+  var NUM = ['', 'een', 'twee', 'drie', 'vier', 'vijf', 'zes', 'zeven', 'acht', 'negen', 'tien', 'elf', 'twaalf', 'dertien', 'veertien'];
+  var HRS = ['twaalf', 'een', 'twee', 'drie', 'vier', 'vijf', 'zes', 'zeven', 'acht', 'negen', 'tien', 'elf'];
+  function nlTime(h, m) {
+    var cur = HRS[h % 12], nxt = HRS[(h + 1) % 12];
+    if (m === 0)  return { n: '', c: 'uur', hr: cur, after: true };
+    if (m < 15)   return { n: NUM[m], c: 'over', hr: cur };
+    if (m === 15) return { n: 'kwart', c: 'over', hr: cur };
+    if (m < 30)   return { n: NUM[30 - m], c: 'voor half', hr: nxt };
+    if (m === 30) return { n: '', c: 'half', hr: nxt };
+    if (m < 45)   return { n: NUM[m - 30], c: 'over half', hr: nxt };
+    if (m === 45) return { n: 'kwart', c: 'voor', hr: nxt };
+    return { n: NUM[60 - m], c: 'voor', hr: nxt };
+  }
+  var wKey = null;
+  function wordsTick(t, hs) {
+    $('wDig').textContent = hs + ':' + pad(t.s);
+    $('qProg').style.width = ((t.m + t.s / 60) / 60 * 100) + '%';
+    var key = t.h + ':' + t.m + lang;
+    if (key === wKey) return;
+    wKey = key;
+    var r = nlTime(t.h, t.m), html;
+    if (r.after) html = '<span class="hr">' + r.hr + '</span> <span class="c">' + r.c + '</span>';
+    else html = (r.n ? '<span class="n">' + r.n + '</span> ' : '') + '<span class="c">' + r.c + '</span> <span class="hr">' + r.hr + '</span>';
+    $('wWords').innerHTML = html;
+    var q = Math.min(3, Math.floor(t.m / 15));
+    each($('qbar').children, function (el, i) { el.classList.toggle('on', i === q); });
+    $('wHint').textContent = (t.m >= 16 && t.m <= 44) ? T[lang].hint(r.hr, (t.h % 12) || 12) : '';
+  }
+
+  // ----- Countdown to next bell -----
+  function countdown(t) {
+    var nowS = t.h * 3600 + t.m * 60 + t.s;
+    for (var i = 0; i < SCHEDULE.length; i++) {
+      var target = SCHEDULE[i][0] * 3600 + SCHEDULE[i][1] * 60;
+      if (target > nowS) {
+        var r = target - nowS, hh = Math.floor(r / 3600), mm = Math.floor((r % 3600) / 60), ss = r % 60;
+        return { key: SCHEDULE[i][2], at: pad(SCHEDULE[i][0] % 24) + ':' + pad(SCHEDULE[i][1]),
+                 text: hh > 0 ? hh + ':' + pad(mm) + ':' + pad(ss) : pad(mm) + ':' + pad(ss) };
+      }
+    }
+    return { key: 'tomorrow', at: '00:00', text: '00:00' };
+  }
+
+  // ----- Main loop (updates 4 times a second) -----
+  function tick() {
+    var t = now(), hs = pad(t.h) + ':' + pad(t.m), d = dateText(lang);
+    $('date').textContent = d;
+    if (lastTz !== t.tz) {
+      $('zone').textContent = t.tz + ' \u00b7 ' + (t.tz === 'CEST' ? T[lang].summer : T[lang].winter) + ' \u00b7 ' + d;
+      lastTz = t.tz;
+    }
+    if (mode === 'clock') {
+      $('cHM').textContent = hs; $('cS').textContent = pad(t.s);
+    } else if (mode === 'words') {
+      wordsTick(t, hs);
+    } else if (mode === 'timer') {
+      timerTick();
+    } else {
+      var c = countdown(t);
+      $('dEv').textContent = T[lang].ev[c.key];
+      $('dAt').textContent = T[lang].at + ' ' + c.at;
+      $('dCd').textContent = c.text;
+      $('dNow').textContent = T[lang].now + ' ' + hs + ':' + pad(t.s);
+    }
+  }
+
+  // ======================================================
+  //  CUSTOM TIMER: type minutes and seconds, or tap a preset
+  // ======================================================
+  var PRESETS = [1, 5, 10, 15, 30, 45];            // minutes (edit here)
+  var tm = { state: 'idle', total: 300, left: 300, end: 0 };   // idle | run | pause | done
+  try { var ts = parseInt(localStorage.getItem('vatel-timer'), 10); if (ts > 0) { tm.total = ts; tm.left = ts; } } catch (e) {}
+
+  function fmtT(sec) {
+    var h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60), s = sec % 60;
+    return h > 0 ? h + ':' + pad(m) + ':' + pad(s) : pad(m) + ':' + pad(s);
+  }
+  function readInputs() {
+    var m = Math.max(0, Math.min(999, parseInt($('tMin').value, 10) || 0));
+    var s = Math.max(0, Math.min(59, parseInt($('tSec').value, 10) || 0));
+    return m * 60 + s;
+  }
+  function writeInputs(sec) { $('tMin').value = Math.floor(sec / 60); $('tSec').value = sec % 60; }
+  function timerText() {
+    var X = T[lang].tm;
+    $('tLblMin').textContent = X.min; $('tLblSec').textContent = X.sec;
+    $('tGo').textContent = tm.state === 'run' ? X.pause : (tm.state === 'pause' ? X.resume : X.start);
+    $('tReset').textContent = X.reset;
+    $('tMsg').textContent = tm.state === 'done' ? X.done : '';
+  }
+  function beep() {
+    try {
+      var AC = window.AudioContext || window.webkitAudioContext, a = new AC();
+      [0, 0.35, 0.7].forEach(function (d) {
+        var o = a.createOscillator(), g = a.createGain();
+        o.frequency.value = 880; o.connect(g); g.connect(a.destination);
+        g.gain.setValueAtTime(0.2, a.currentTime + d);
+        o.start(a.currentTime + d); o.stop(a.currentTime + d + 0.2);
+      });
+    } catch (e) {}
+  }
+  function setTotal(sec) {
+    tm.state = 'idle'; tm.total = tm.left = sec; writeInputs(sec); save('vatel-timer', sec); timerText();
+  }
+  function timerTick() {
+    if (tm.state === 'run') {
+      tm.left = Math.max(0, Math.ceil((tm.end - Date.now()) / 1000));
+      if (tm.left <= 0) { tm.state = 'done'; timerText(); beep(); }
+    }
+    $('tTime').textContent = fmtT(tm.left);
+    $('tTime').classList.toggle('done', tm.state === 'done');
+  }
+  PRESETS.forEach(function (m) {
+    var b = document.createElement('button');
+    b.type = 'button'; b.textContent = m + ' min';
+    b.addEventListener('click', function () { setTotal(m * 60); timerTick(); });
+    $('tPre').appendChild(b);
+  });
+  $('tGo').addEventListener('click', function () {
+    if (tm.state === 'run') {
+      tm.left = Math.max(0, Math.ceil((tm.end - Date.now()) / 1000)); tm.state = 'pause';
+    } else if (tm.state === 'pause') {
+      tm.end = Date.now() + tm.left * 1000; tm.state = 'run';
+    } else {
+      var sec = readInputs(); if (sec <= 0) return;
+      tm.total = tm.left = sec; save('vatel-timer', sec);
+      tm.end = Date.now() + sec * 1000; tm.state = 'run';
+    }
+    timerText(); timerTick();
+  });
+  $('tReset').addEventListener('click', function () { setTotal(readInputs() || tm.total); timerTick(); });
+  ['tMin', 'tSec'].forEach(function (id) {
+    $(id).addEventListener('input', function () {
+      if (tm.state === 'run' || tm.state === 'pause') return;
+      tm.state = 'idle'; tm.left = readInputs(); timerText(); timerTick();
+    });
+  });
+  writeInputs(tm.total);
+
+  $('fs').addEventListener('click', function () {
+    try {
+      if (document.fullscreenElement) document.exitFullscreen();
+      else document.documentElement.requestFullscreen();
+    } catch (e) {}
+  });
+
+  // ----- Hide / show all options (button H, or press H on the keyboard) -----
+  function toggleClean(force) {
+    var on = typeof force === 'boolean' ? force : !document.body.classList.contains('clean');
+    document.body.classList.toggle('clean', on);
+  }
+  $('hide').addEventListener('click', function () { toggleClean(); this.blur(); });
+  document.addEventListener('keydown', function (e) {
+    var tag = (e.target && e.target.tagName) || '';
+    if (e.ctrlKey || e.metaKey || e.altKey || tag === 'INPUT') return;
+    if (e.key === 'h' || e.key === 'H') toggleClean();
+    else if (e.key === 'Escape') toggleClean(false);
+    else if (e.key === ' ' && mode === 'timer' && tag !== 'BUTTON') { e.preventDefault(); $('tGo').click(); } // Space = start / pause timer
+  });
+
+  setLang(lang);
+  setMode(mode);
+  setCW(cw);
+  tick();
+  setInterval(tick, 250);
+})();
+</script>
+</body>
+</html>
